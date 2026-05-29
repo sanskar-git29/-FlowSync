@@ -1,0 +1,47 @@
+# docker-compose.yml  (development — infra only)
+version: '3.8'
+
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine        # alpine = smaller image
+    container_name: flowsync_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       flowsync_dev
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres  # dev only — use secrets in prod
+    ports: - "5432:5432"                   # host:container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # persist data on restart
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flowsync_dev"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+      start_period: 10s   # give it time to init before first check
+
+  # ── Redis ─────────────────────────────────────────────────
+  redis:image: redis:7-alpine
+    container_name: flowsync_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes  # enable persistence
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+# ── Named volumes (data survives container restarts) ───────
+volumes:  postgres_data:
+  redis_data:
+
+# ── Network (services find each other by name) ─────────────
+networks:
+  default:
+    name: flowsync_network
