@@ -4,7 +4,12 @@ import { env } from './config/env.js';
 
 const server = http.createServer(app);
 
-server.listen(env.PORT, (): void => {
+import { connectDB, disconnectDB } from './shared/db/pool.js';
+
+// Connect to DB before accepting traffic
+await connectDB();
+
+server.listen(env.PORT, () => {
   console.log(`[server] running on port ${env.PORT} · env: ${env.NODE_ENV}`);
 });
 
