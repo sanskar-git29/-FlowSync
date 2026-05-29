@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# Build/Output directories (if generated locally)
+dist
+build
+.next
+out
+
+# Docker files (prevent recursive context issues)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# IDE & OS files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*   
