@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.21.0"
   },
   "name": "flowsync",
   "version": "0.1.0",
@@ -12,7 +13,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "tsx src/shared/db/migrate-runner.ts",
+    "db:reset": "docker compose down -v && docker compose up -d && sleep 3 && npm run db:migrate"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +23,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.2",
+    "@types/pg": "^8.20.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
