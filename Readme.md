@@ -1,20 +1,25 @@
-FlowSync professional README.md template
-Copy this exactly as your README.md — replace placeholders in [ ]
-# Everything below goes into README.md at the root of your repo
 
-<div align="center">
 
-# FlowSync
+<div align="center" style="font-family:Arial, Helvetica, sans-serif;">
 
-**Production-grade real-time event processing and workflow automation platform**
+<h1 style="color:#187bcd; margin-bottom: 0.2em; font-size: 4rem; letter-spacing: 0.04em;">
+  ⚡️ FlowSync ⚡️
+</h1>
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=flat&logo=node.js&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?style=flat&logo=redis&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat)
-![Status](https://img.shields.io/badge/Status-In%20Development-orange?style=flat)
+<p style="color:#5DADE2; font-size:1.25em; max-width:740px; margin:0 auto; line-height:1.5;">
+  Production-grade real-time event processing and workflow automation platform
+</p>
+
+<div style="margin:1rem auto 1.5rem; width:120px; height:4px; background:linear-gradient(90deg, #85C1E9, #1F618D); border-radius:999px;"></div>
+
+<p>
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript">&nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/Node.js-20.x-339933?style=flat&logo=node.js&logoColor=white" alt="Node.js">&nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL">&nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/Redis-7.x-DC382D?style=flat&logo=redis&logoColor=white" alt="Redis">&nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white" alt="Docker">&nbsp;&nbsp;
+  <img src="https://img.shields.io/badge/License-MIT-5DADE2?style=flat&logo=github&logoColor=white" alt="License">
+</p>
 
 </div>
 
@@ -115,25 +120,44 @@ flowsync/
 
 ---
 
-## Development workflow
 
-This project follows **GitFlow** branching strategy
-and **Conventional Commits** specification.
+## Database & Connection Management
 
 ```
-main        → production-ready releases only
-develop     → integration branch for completed features
-feature/*   → one branch per feature, merged into develop
-fix/*       → bug fixes, merged into develop (or main for hotfixes)
+Client Requests
+       │
+       ▼
+┌─────────────────┐
+│ Connection Pool │
+└────────┬────────┘
+         │
+         ▼
+    PostgreSQL
 ```
 
-Commit format: `type(scope): description`
-Examples:
-- `feat(auth): add JWT refresh token endpoint`
-- `fix(queue): handle null payload in processor`
-- `chore: add eslint configuration`
+The API uses a shared PostgreSQL connection pool to efficiently handle concurrent requests. Connections are reused across requests instead of being created and destroyed repeatedly, reducing latency and database overhead.
 
----
+### Pool Configuration
+
+| Setting            | Value |
+| ------------------ | ----- |
+| Min Connections    | 2     |
+| Max Connections    | 10    |
+| Idle Timeout       | 30s   |
+| Connection Timeout | 3s    |
+
+### Features
+
+* Connection pooling for concurrent workloads
+* Automatic idle connection cleanup
+* Fast failure when the pool is exhausted
+* Graceful startup and shutdown
+* SSL/TLS support for encrypted database communication
+* Environment-based configuration for all database credentials
+
+```
+```
+
 
 ## Roadmap
 

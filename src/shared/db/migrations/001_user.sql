@@ -3,6 +3,8 @@
 -- Run once. Never edit after applying. Add a new migration to change schema.
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";  -- enables uuid_generate_v4()
+-- UUIDs as primary keys, not integers. Why? Two reasons: (1) you can generate IDs in the application before inserting — no round-trip to the DB needed. (2) IDs are safe to expose in URLs — sequential integers let users guess resource IDs. TIMESTAMPTZ stores timezone info — always use this over TIMESTAMP. The indexes on email and created_at are for queries you'll run constantly.
+-- normal id are easy to guess, but UUIDs are random and can't be easily guessed. This is good for security, especially if you expose IDs in URLs.
 
 CREATE TABLE users (
   id            UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
