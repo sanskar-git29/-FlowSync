@@ -1,37 +1,35 @@
-import 'dotenv/config';    // loads .env file into process.env
-
-// A small typed validator — no extra library needed
+//o your existing env.ts. requireEnv crashes the server at startup if a JWT secret is missing — better than a cryptic error at 3am when the first login fails.
+import 'dotenv/config';
+ 
+// Helper functions to read environment variables with type safety and defaults
 function requireEnv(key: string): string {
   const value = process.env[key];
-  if (!value) {
-    // crash immediately with a helpful message
-    throw new Error(`[env] Missing required environment variable: ${key}`);
-  }
+  if (!value) throw new Error(`[env] Missing required variable: ${key}`);
   return value;
-}
-
+} 
+// For optional variables, we can provide a default value. This is useful for things like PORT or JWT expiration times.
 function optionalEnv(key: string, fallback: string): string {
   return process.env[key] ?? fallback;
 }
 
-// This object is the single source of truth for all config.
-// Import { env } everywhere — never process.env directly.
 export const env = {
   NODE_ENV: optionalEnv('NODE_ENV', 'development') as
     'development' | 'production' | 'test',
-
   PORT: parseInt(optionalEnv('PORT', '3000'), 10),
 
-  // These throw at startup if missing — fail fast
+  // Database
   DB_HOST:     requireEnv('DB_HOST'),
   DB_PORT:     parseInt(requireEnv('DB_PORT'), 10),
   DB_NAME:     requireEnv('DB_NAME'),
   DB_USER:     requireEnv('DB_USER'),
   DB_PASSWORD: requireEnv('DB_PASSWORD'),
 
-  JWT_SECRET:  requireEnv('JWT_SECRET'),
-  JWT_EXPIRES_IN: optionalEnv('JWT_EXPIRES_IN', '15m'),
-} as const;           // as const → all values are readonly
+  // JWT — two separate secrets for access and refresh tokens
+  // Using the same secret for both is a security mistake
+  JWT_SECRET:             requireEnv('JWT_SECRET'),
+  JWT_EXPIRES_IN:         optionalEnv('JWT_EXPIRES_IN', '15m'),
+  JWT_REFRESH_SECRET:     requireEnv('JWT_REFRESH_SECRET'),
+  JWT_REFRESH_EXPIRES_IN: optionalEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
+} as const;
 
-// Export the type so you can use it in other files
 export type Env = typeof env;
