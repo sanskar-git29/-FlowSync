@@ -5,6 +5,7 @@ import express, {
 import { env }            from './config/env.js';
 import authRoutes         from './modules/auth/auth.routes.js';
 import { errorHandler }   from './middleware/error.middleware.js';
+import eventsRoutes     from './modules/events/events.routes.js'; 
 
 const app: Application = express();
 
@@ -23,6 +24,22 @@ app.use('/api/v1/auth', authRoutes);
 // POST /api/v1/auth/register ← public
 // POST /api/v1/auth/login    ← public
 // POST /api/v1/auth/refresh  ← public
+
+/* ── Events routes ─────────────────────────────────────── */
+app.use('/api/v1/events', eventsRoutes);
+// GET    /api/v1/events/          ← protected (needs Bearer token)
+// GET    /api/v1/events/:id       ← protected (needs Bearer token)
+// POST   /api/v1/events/          ← protected (needs Bearer token)
+// PUT    /api/v1/events/:id       ← protected (needs Bearer token)
+// DELETE /api/v1/events/:id       ← protected (needs Bearer token)
+
+/* ── Workflows routes ───────────────────────────────────── */
+// app.use('/api/v1/workflows', workflowsRoutes);
+// GET    /api/v1/workflows/          ← protected (needs Bearer token)
+// GET    /api/v1/workflows/:id       ← protected (needs Bearer token)
+// POST   /api/v1/workflows/          ← protected (needs Bearer token)
+// PUT    /api/v1/workflows/:id       ← protected (needs Bearer token)
+// DELETE /api/v1/workflows/:id       ← protected (needs Bearer token)
 
 /* ── 404 ─────────────────────────────────────────────────── */
 app.use((_req: Request, res: Response): void => {
