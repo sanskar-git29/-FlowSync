@@ -20,7 +20,7 @@ const createEventSchema = z.object({
       /^[a-z][a-z0-9_.]*$/,
       'Type must be lowercase dot-notation: e.g. order.placed'
     ),
-  payload: z.record(z.unknown())
+  payload: z.record(z.string(),z.unknown())
     .optional()
     .default({}),           // default to empty object if not provided
 });

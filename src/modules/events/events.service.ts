@@ -1,5 +1,3 @@
-
-
 import { pool } from '../../shared/db/pool.js';
 import type { Event, CreateEventDto, PaginatedResult } from './events.types.js';
 

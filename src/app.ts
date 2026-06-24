@@ -32,6 +32,7 @@ app.use('/api/v1/events', eventsRoutes);
 // PUT  /api/v1/events/:id      ← protected (needs Bearer token)
 // DELETE /api/v1/events/:id    ← protected (needs Bearer token)
 
+
 /* ── Other routes ───────────────────────────────────────── */
 app.get('/', (_req: Request, res: Response): void => {
   res.status(200).json({ message: 'Welcome to the FlowSync API' });
