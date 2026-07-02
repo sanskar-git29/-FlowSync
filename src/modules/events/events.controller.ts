@@ -6,10 +6,10 @@ export async function create(
   req: Request, res: Response, next: NextFunction
 ): Promise<void> {
   try {
-    const event = await eventsService.createEvent(
-      req.user!.id,         // guaranteed by authenticate middleware
-      req.body as CreateEventDto
-    );
+   const event = await eventsService.createEvent(
+  req.user!.id,  // ! = "I promise it's not undefined, authenticate checked it"
+  req.body as CreateEventDto,
+);
     res.status(201).json({ event });
   } catch (err) { next(err); }
 }
