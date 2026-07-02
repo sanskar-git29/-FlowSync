@@ -1,8 +1,10 @@
 {
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.79.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.21.0",
     "zod": "^4.4.3"
@@ -18,7 +20,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx src/shared/db/migrate-runner.ts",
-    "db:reset": "docker compose down -v && docker compose up -d && sleep 3 && npm run db:migrate"
+    "db:reset": "docker compose down -v && docker compose up -d && sleep 3 && npm run db:migrate",
+    "worker:dev": "tsx watch src/workers/worker.ts"
   },
   "keywords": [],
   "author": "",
