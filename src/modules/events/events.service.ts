@@ -1,19 +1,24 @@
+// ─────────────────────────────────────────────────────────────
+// WHAT CHANGED FROM PHASE 1
+//
+// createEvent:   now enqueues a job after inserting, busts cache
+// getUserEvents: now checks Redis before hitting the DB
+// deleteEvent:   now busts cache after deleting
+// updateEventStatus: fixed — just an UPDATE query, nothing else
+// ─────────────────────────────────────────────────────────────
 
-import { pool }           from '../../shared/db/pool.js';
-import { enqueueEvent }   from '../../shared/queues/event.queue.js';
+import { pool }            from '../../shared/db/pool.js';
+import { enqueueEvent }    from '../../shared/queues/event.queue.js';
 import { getCache, setCache, deleteByPattern }
-                           from '../../shared/redis/cache.js';
+  from '../../shared/redis/cache.js';
 import type { Event, CreateEventDto, PaginatedResult }
-                           from './events.types.js';
+  from './events.types.js';
 
-// ─────────────────────────────────────────────────────────────
-// createEvent
-// ─────────────────────────────────────────────────────────────
 export async function createEvent(
   userId: string,
   dto:    CreateEventDto,
 ): Promise<Event> {
-  // 1. Insert into PostgreSQL
+  // 1. Insert the event into PostgreSQL and get the full row back.
   const result = await pool.query(
     `INSERT INTO events (user_id, type, payload)
      VALUES ($1, $2, $3)
@@ -21,44 +26,55 @@ export async function createEvent(
     [userId, dto.type, JSON.stringify(dto.payload ?? {})],
   );
 
- 
+  // 2. Extract the inserted row. We need it before we can enqueue.
   const event = result.rows[0] as Event;
 
-
+  // 3. Push a job to the BullMQ queue.
+  //    This is a fast Redis write (~2ms). The worker will pick it up
+  //    and process it independently after we've already responded to the client.
+  //    jobId = eventId ensures the same event isn't processed twice.
   await enqueueEvent({
     eventId: event.id,
-    userId,
+    userId:  event.userId,
     type:    event.type,
     payload: event.payload,
   });
 
-  // 3. Bust cached event lists — they're now stale
+  // 4. The cached list is now stale (it doesn't include the new event).
+  //    Delete it so the next GET /events fetches fresh data from the DB.
   await deleteByPattern(`events:${userId}:*`);
 
   return event;
 }
 
-// ─────────────────────────────────────────────────────────────
-// getUserEvents  (paginated, cache-aside)
-// ─────────────────────────────────────────────────────────────
 export async function getUserEvents(
   userId: string,
   page    = 1,
   limit   = 20,
 ): Promise<PaginatedResult<Event>> {
+  // Cache key includes userId, page, and limit.
+  // Different pages and different page sizes are cached separately.
+  // Example keys:
+  //   events:abc-123:1:20  → user abc-123's page 1, 20 per page
+  //   events:abc-123:2:20  → user abc-123's page 2, 20 per page
+  const cacheKey = `events:${userId}:${page}:${limit}`;
 
-  // FIX 2: actually use the cache — check Redis first
-  const key    = `events:${userId}:${page}:${limit}`;
-  const cached = await getCache<PaginatedResult<Event>>(key);
+  // Check Redis first. If data is there, return it immediately.
+  // No database query. No connection pool usage. Near-instant response.
+  const cached = await getCache<PaginatedResult<Event>>(cacheKey);
   if (cached) {
-    console.log(`[cache] HIT  ${key}`);
+    console.log(`[cache] HIT  ${cacheKey}`);
     return cached;
   }
-  console.log(`[cache] MISS ${key}`);
 
-  // Cache miss — hit PostgreSQL
+  // Cache miss — go to the database.
+  console.log(`[cache] MISS ${cacheKey}`);
   const offset = (page - 1) * limit;
 
+  // Run both queries in parallel with Promise.all.
+  // Sequential would mean: wait for query 1 to finish, THEN start query 2.
+  // Parallel means: start both at the same time, wait for the slower one.
+  // For two 15ms queries: sequential = 30ms total, parallel = 15ms total.
   const [eventsResult, countResult] = await Promise.all([
     pool.query(
       `SELECT * FROM events
@@ -68,6 +84,7 @@ export async function getUserEvents(
       [userId, limit, offset],
     ),
     pool.query(
+      // ::int casts PostgreSQL's bigint COUNT to a regular integer.
       'SELECT COUNT(*)::int AS total FROM events WHERE user_id = $1',
       [userId],
     ),
@@ -82,28 +99,26 @@ export async function getUserEvents(
     totalPages: Math.ceil(total / limit),
   };
 
-  // Store in Redis for 5 minutes — auto-expires
-  await setCache(key, result, 300);
+  // Store in Redis for 5 minutes. Redis will auto-delete it after that.
+  // The next request after expiry will be a cache miss and rebuild it.
+  await setCache(cacheKey, result, 300);
+
   return result;
 }
 
-// ─────────────────────────────────────────────────────────────
-// getEventById
-// ─────────────────────────────────────────────────────────────
 export async function getEventById(
   userId:  string,
   eventId: string,
 ): Promise<Event | null> {
   const result = await pool.query(
+    // Always scope by user_id. User A cannot read user B's events
+    // even if they know the UUID. This is IDOR prevention.
     'SELECT * FROM events WHERE id = $1 AND user_id = $2',
     [eventId, userId],
   );
   return (result.rows[0] as Event | undefined) ?? null;
 }
 
-// ─────────────────────────────────────────────────────────────
-// deleteEvent
-// ─────────────────────────────────────────────────────────────
 export async function deleteEvent(
   userId:  string,
   eventId: string,
@@ -114,7 +129,9 @@ export async function deleteEvent(
   );
   const deleted = (result.rowCount ?? 0) > 0;
 
-  // FIX 4: bust cache after delete — otherwise stale data returned
+  // Only bust cache if a row was actually deleted.
+  // If nothing was deleted (wrong userId or wrong eventId),
+  // the cache is still accurate — no need to clear it.
   if (deleted) {
     await deleteByPattern(`events:${userId}:*`);
   }
@@ -122,17 +139,15 @@ export async function deleteEvent(
   return deleted;
 }
 
-// ─────────────────────────────────────────────────────────────
-// updateEventStatus  (called by worker — NOT by the API)
-// ─────────────────────────────────────────────────────────────
+// Called by the worker processor to update event status.
+// This has nothing to do with caching — it's a plain DB write.
+// The processor handles cache invalidation separately after calling this.
 export async function updateEventStatus(
   eventId: string,
   status:  Event['status'],
 ): Promise<void> {
-  // FIX 3: correct body — just update DB, nothing else
   await pool.query(
-    'UPDATE events SET status = $1 WHERE id = $2',
+    'UPDATE events SET status = $1, updated_at = NOW() WHERE id = $2',
     [status, eventId],
   );
-  // worker calls this as: pending → processing → completed / failed
 }

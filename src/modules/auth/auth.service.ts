@@ -5,6 +5,7 @@ import { pool }  from '../../shared/db/pool.js';
 import { env }   from '../../config/env.js';
 import { AuthError, type AuthTokens, type JwtPayload }
   from './auth.types.js';
+import type { SignOptions } from 'jsonwebtoken';
 
 // Cost factor 12 = ~300ms per hash on modern hardware
 // This is intentionally slow to defeat brute-force attacks
@@ -78,23 +79,22 @@ export async function login(
 export function generateTokens(userId: string): AuthTokens {
   const payload = { userId };
 
-  // Access token — short window, used on every request
-  const accessToken = jwt.sign(
-    payload, 
-    env.JWT_SECRET, 
-    {
-    expiresIn: env.JWT_EXPIRES_IN, // '15m'
-  });  
-
-  // Refresh token — longer window, only used to rotate tokens
-  // Uses a DIFFERENT secret — if one leaks, the other is still safe
-  const refreshToken = jwt.sign(
-    payload, 
-    env.JWT_REFRESH_SECRET, 
-    {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN, // '7d
-    }
+ const accessToken = jwt.sign(
+  payload,
+  env.JWT_SECRET,
+  {
+    expiresIn: env.JWT_EXPIRES_IN as NonNullable<SignOptions['expiresIn']>,
+  }
 );
+
+const refreshToken = jwt.sign(
+  payload,
+  env.JWT_REFRESH_SECRET,
+  {
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN as NonNullable<SignOptions['expiresIn']>,
+  }
+);
+
 
   return { accessToken, refreshToken };
 }

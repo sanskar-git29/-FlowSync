@@ -28,16 +28,16 @@ export const env = {
 
   // JWT — two separate secrets for access and refresh tokens
   // Using the same secret for both is a security mistake
-  JWT_SECRET: requireEnv("JWT_SECRET"),
-  JWT_EXPIRES_IN: optionalEnv("JWT_EXPIRES_IN", "15m"),
-  JWT_REFRESH_SECRET: requireEnv("JWT_REFRESH_SECRET"),
-  JWT_REFRESH_EXPIRES_IN: optionalEnv("JWT_REFRESH_EXPIRES_IN", "7d"),
+  JWT_SECRET: requireEnv("JWT_SECRET") as string ,
+  JWT_EXPIRES_IN: optionalEnv("JWT_EXPIRES_IN", "15m") as string,
+  JWT_REFRESH_SECRET: requireEnv("JWT_REFRESH_SECRET") as string,
+  JWT_REFRESH_EXPIRES_IN: optionalEnv("JWT_REFRESH_EXPIRES_IN", "7d") as string,
 
-  REDIS_HOST: requireEnv("REDIS_HOST"),
-  REDIS_PORT: parseInt(requireEnv("REDIS_PORT"), 10),
-  REDIS_PASSWORD: optionalEnv("REDIS_PASSWORD", ""),
-  QUEUE_CONCURRENCY: parseInt(optionalEnv("QUEUE_CONCURRENCY", "5"), 10),
-  QUEUE_MAX_ATTEMPTS: parseInt(optionalEnv("QUEUE_MAX_ATTEMPTS", "3"), 10),
+ REDIS_HOST:          requireEnv('REDIS_HOST'),
+REDIS_PORT:          parseInt(requireEnv('REDIS_PORT'), 10),
+REDIS_PASSWORD:      optionalEnv('REDIS_PASSWORD', ''),
+QUEUE_CONCURRENCY:   parseInt(optionalEnv('QUEUE_CONCURRENCY',  '5'), 10),
+QUEUE_MAX_ATTEMPTS:  parseInt(optionalEnv('QUEUE_MAX_ATTEMPTS', '3'), 10),
 } as const;
 
 export type Env = typeof env;
