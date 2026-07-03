@@ -1,47 +1,47 @@
+// ─────────────────────────────────────────────────────────────
+// WHAT CHANGED FROM PHASE 1
+//
+// Added connectRedis() on startup and disconnectRedis() on shutdown.
+// The API server needs Redis for the cache-aside pattern in getUserEvents.
+// ─────────────────────────────────────────────────────────────
+
 import http from 'node:http';
-import app from './app.js';
-import { env } from './config/env.js';
+import app  from './app.js';
+import { env }                       from './config/env.js';
+import { connectDB, disconnectDB }   from './shared/db/pool.js';
+import { connectRedis, disconnectRedis } from './shared/redis/client.js';
 
 const server = http.createServer(app);
 
-import { connectDB, disconnectDB } from './shared/db/pool.js';
-
-// Connect to DB before accepting traffic
+// Connect to both dependencies before listening for requests.
+// If either fails, the process crashes here with a clear error.
+// You never want an API server running that can't reach its database.
 await connectDB();
+await connectRedis();
 
-server.listen(env.PORT, () => {
-  console.log(`[server] running on port ${env.PORT} · env: ${env.NODE_ENV}`);
+server.listen(env.PORT, (): void => {
+  console.log(`[server] :${env.PORT}  env=${env.NODE_ENV}`);
 });
 
-/* ── Graceful shutdown ──────────────────────────────────── */
-// When Docker/K8s sends SIGTERM (deploy, restart, scale-down),
-// we stop accepting new connections and wait for active ones.
-const shutdown = (signal: string): void => {
-  console.log(`[server] ${signal} received — shutting down gracefully`);
-  server.close((): void => {
-    console.log('[server] all connections closed — exiting');
+const shutdown = async (signal: string): Promise<void> => {
+  console.log(`[server] ${signal} — graceful shutdown`);
+  server.close(async (): Promise<void> => {
+    await disconnectDB();
+    await disconnectRedis();
     process.exit(0);
   });
-
-  // Force exit if connections don't close in 10s
-  setTimeout((): void => {
-    console.error('[server] shutdown timeout — forcing exit');
-    process.exit(1);
-  }, 10_000);
+  setTimeout((): void => { process.exit(1); }, 10_000);
 };
 
-process.on('SIGTERM', (): void => shutdown('SIGTERM'));
-process.on('SIGINT',  (): void => shutdown('SIGINT'));   // Ctrl+C
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT',  () => void shutdown('SIGINT'));
 
-/* ── Unhandled errors ────────────────────────────────────── */
-// These should never happen in production — if they do, it's a bug.
-// Log it, then crash — a crashed server is better than a corrupt one.
-process.on('unhandledRejection', (reason: unknown): void => {
+process.on('unhandledRejection', (reason): void => {
   console.error('[server] unhandledRejection:', reason);
   process.exit(1);
 });
 
 process.on('uncaughtException', (err: Error): void => {
-  console.error('[server] uncaughtException:', err);
+  console.error('[server] uncaughtException:', err.message);
   process.exit(1);
 });
