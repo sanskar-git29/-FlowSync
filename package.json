@@ -29,14 +29,16 @@
     "worker": "tsx src/workers/worker.ts",
     "ws:dev": "tsx watch src/ws-server.ts",
     "ws": "tsx src/ws-server.ts",
-    "test":    "vitest run",
- "test:ci": "vitest run --coverage",
-  "test:watch": "vitest"
+    "test": "vitest run",
+    "test:ci": "vitest run --coverage",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -45,9 +47,11 @@
     "@types/supertest": "^7.2.0",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.7.0",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.63.0",
     "vitest": "^4.1.10"
   }
 }
