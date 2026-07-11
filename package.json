@@ -28,7 +28,10 @@
     "worker:dev": "tsx watch src/workers/worker.ts",
     "worker": "tsx src/workers/worker.ts",
     "ws:dev": "tsx watch src/ws-server.ts",
-    "ws": "tsx src/ws-server.ts"
+    "ws": "tsx src/ws-server.ts",
+    "test":    "vitest run",
+ "test:ci": "vitest run --coverage",
+  "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
