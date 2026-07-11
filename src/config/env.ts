@@ -40,6 +40,12 @@ export const env = {
   QUEUE_MAX_ATTEMPTS: parseInt(optionalEnv("QUEUE_MAX_ATTEMPTS", "3"), 10),
 
   WS_PORT: parseInt(optionalEnv("WS_PORT", "4000"), 10),
+
+  LOG_LEVEL:            optionalEnv('LOG_LEVEL', 'info'),
+   METRICS_PORT:         parseInt(optionalEnv('METRICS_PORT', '9090'), 10),
+ RATE_LIMIT_WINDOW_MS: parseInt(optionalEnv('RATE_LIMIT_WINDOW_MS', '60000'), 10),
+ RATE_LIMIT_MAX:       parseInt(optionalEnv('RATE_LIMIT_MAX', '100'), 10),
+
 } as const;
 
 export type Env = typeof env;
