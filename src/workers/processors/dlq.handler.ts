@@ -1,10 +1,10 @@
 import type { Job } from 'bullmq';
 import { pool }               from '../../shared/db/pool.js';
 import { publishEventUpdate } from '../../shared/redis/publisher.js';  // ← ADD
-import type { EventJobPayload, JobName } from '../../shared/queues/queue.types.js';
+import type { EventJobPayload, EventJobName } from '../../shared/queues/queue.types.js';
 
 export async function handleDlq(
-  job:   Job<EventJobPayload, void, JobName>,
+   job: Job<EventJobPayload>,
   error: Error,
 ): Promise<void> {
   const { eventId, userId, type } = job.data;
