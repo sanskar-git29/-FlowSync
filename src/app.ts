@@ -1,49 +1,44 @@
-import express, {
-  type Application, type Request, type Response
-} from 'express';
-import { env }            from './config/env.js';
-import authRoutes         from './modules/auth/auth.routes.js';
-import { errorHandler }   from './middleware/error.middleware.js';
-import eventsRoutes     from './modules/events/events.routes.js'; 
+import express, { type Application, type Request, type Response } from 'express';
+import { randomUUID }                    from 'node:crypto';
+import { env }                           from './config/env.js';
+import { logger }                        from './shared/logger.js';
+import { register, metricsMiddleware }   from './shared/metrics.js';
+import { globalLimiter, authLimiter, eventLimiter } from './middleware/rate.middleware.js';
+import { errorHandler }                  from './middleware/error.middleware.js';
+import authRoutes                        from './modules/auth/auth.routes.js';
+import eventsRoutes                      from './modules/events/events.routes.js';
+import workflowRoutes                    from './modules/workflows/workflows.routes.js';
 
 const app: Application = express();
 
-/* ── Body parsing ───────────────────────────────────────── */
+app.use(metricsMiddleware);
+app.use((req: Request, res: Response, next): void => {
+  const id = (req.headers['x-request-id'] as string) ?? randomUUID();
+  req.headers['x-request-id'] = id;
+  res.setHeader('x-request-id', id);
+  next();
+});
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(globalLimiter);
 
-/* ── Health check ───────────────────────────────────────── */
-app.get('/health', (_req: Request, res: Response): void => {
+// Prometheus scrape endpoint — outside rate limiter
+app.get('/metrics', async (_req, res): Promise<void> => {
+  res.setHeader('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
+app.get('/health', (_req, res): void => {
   res.status(200).json({ status: 'ok', env: env.NODE_ENV });
 });
 
-/* ── Auth routes ────────────────────────────────────────── */
-app.use('/api/v1/auth', authRoutes);
-// GET  /api/v1/auth/me       ← protected (needs Bearer token)
-// POST /api/v1/auth/register ← public
-// POST /api/v1/auth/login    ← public
-// POST /api/v1/auth/refresh  ← public
+// Routes
+app.use('/api/v1/auth',      authLimiter,  authRoutes);
+app.use('/api/v1/events',    eventLimiter, eventsRoutes);
+app.use('/api/v1/workflows', workflowRoutes);
 
-/* ── Events routes ─────────────────────────────────────── */
-app.use('/api/v1/events', eventsRoutes);
-// GET  /api/v1/events          ← protected (needs Bearer token)
-// POST /api/v1/events          ← protected (needs Bearer token)
-// GET  /api/v1/events/:id      ← protected (needs Bearer token)
-// PUT  /api/v1/events/:id      ← protected (needs Bearer token)
-// DELETE /api/v1/events/:id    ← protected (needs Bearer token)
-
-
-/* ── Other routes ───────────────────────────────────────── */
-app.get('/', (_req: Request, res: Response): void => {
-  res.status(200).json({ message: 'Welcome to the FlowSync API' });
-});
-
-/* ── 404 ─────────────────────────────────────────────────── */
-app.use((_req: Request, res: Response): void => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-/* ── Error handler — MUST be last ───────────────────────── */
+app.use((_req, res): void => { res.status(404).json({ error: 'Not found' }); });
 app.use(errorHandler);
 
+logger.info('[app] ready');
 export default app;

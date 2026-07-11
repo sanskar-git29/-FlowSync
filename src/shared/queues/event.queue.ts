@@ -16,7 +16,7 @@ import { bullmqConnection } from './bullmq-connection.js';
 import {
   JOB_NAMES,
   type EventJobPayload,
-  type JobName,
+  type EventJobName
 } from './queue.types.js';
 
 // Queue
@@ -26,7 +26,7 @@ import {
 // NameType   = JobName         — the literal string 'process.event'
 //
 // All three must match exactly between Queue and Worker.
-export const eventQueue = new Queue<EventJobPayload, void, JobName>(
+export const eventQueue = new Queue<EventJobPayload, void, EventJobName>(
   'events',  // queue name — worker.ts must use the EXACT same string
   {
     connection: bullmqConnection,
