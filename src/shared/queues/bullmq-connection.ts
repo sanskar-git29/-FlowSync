@@ -30,4 +30,5 @@ export const bullmqConnection: ConnectionOptions = {
 
   // Skip the initial ready check — BullMQ handles this itself.
   enableReadyCheck: false,
-}
+};
+
