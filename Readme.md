@@ -533,8 +533,8 @@ LOG_LEVEL=debug
 # PostgreSQL
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=flowsync_dev
-DB_USER=postgres
+DB_NAME=your_db-name
+DB_USER=your-dbusername
 DB_PASSWORD=your_password
 
 # Redis
@@ -561,11 +561,6 @@ METRICS_PORT=9090
 # Rate limiting
 RATE_LIMIT_WINDOW_MS=60000
 RATE_LIMIT_MAX=100
-
-# Email (get free key at resend.com)
-RESEND_API_KEY=re_xxxxxxxxxxxx
-EMAIL_FROM=onboarding@resend.dev
-```
 
 ---
 
